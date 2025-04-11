@@ -1,0 +1,10 @@
+hello:A greeting;A way to say hi
+java:A popular programming language;Used for enterprise applications
+computer:An electronic device for processing data
+university:A place for higher education;A community of scholars
+network:A group of interconnected devices;Can be wired or wireless
+server:A system that provides services to clients
+client:A device or program that accesses a service provided by a server
+dictionary:A book or database of word meanings;Used for looking up words
+socket:An end point for communication between machines
+thread:A unit of execution in a program;Used for concurrency
