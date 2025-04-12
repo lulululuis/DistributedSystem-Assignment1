@@ -57,6 +57,16 @@ public class Server {
 		}
 	}
 	
+	private static synchronized void saveDictionary() {
+		try(PrintWriter writer = new PrintWriter(new FileWriter(dictionaryFile))){
+			for(Map.Entry<String, Set<String>> entry : dictionary.entrySet()) {
+				writer.println(entry.getKey() + ":" + String.join(";", entry.getValue()));
+			}
+		} catch(IOException ex){
+			System.out.println("Error saving dictionary" + ex.getMessage());
+		}
+	}
+	
 	private static class ClientHandler extends Thread{
 		private Socket socket;
 		
@@ -85,6 +95,8 @@ public class Server {
 			switch(command) {
 				case "SEARCH":
 					return searchWord(parts);
+				case "ADD":
+					return addWord(parts);
 				default:
 					return "Unknown Command.";
 			}
@@ -96,6 +108,16 @@ public class Server {
 			Set<String> meanings = dictionary.get(word);
 			if(meanings == null) return "No word.";
 			return "Meaning: " + String.join(";", meanings);
+		}
+		
+		private String addWord(String[] parts) {
+			if(parts.length < 3 || parts[2].isEmpty()) return "Word and meaning required.";
+			String word = parts[1].toLowerCase();
+			if(dictionary.containsKey(word)) return "Duplicate: Word already exists.";
+			Set<String> meanings = new HashSet<>(Arrays.asList(parts[2].split(";")));
+			dictionary.put(word, meanings);
+			saveDictionary();
+			return "Success: Word added.";
 		}
 	}
 }

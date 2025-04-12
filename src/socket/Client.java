@@ -10,7 +10,7 @@ public class Client extends JFrame{
 	private Socket socket;
 	private PrintWriter writer;
 	private BufferedReader reader;
-	private JTextField wordField;
+	private JTextField wordField, meaningField, exMeaningField, newMeaningField;
 	private JTextArea responseArea;
 	
 	
@@ -27,6 +27,10 @@ public class Client extends JFrame{
 		wordField = new JTextField();
 		inputPanel.add(wordField);
 		
+		inputPanel.add(new JLabel("Meaning: "));
+		meaningField = new JTextField();
+		inputPanel.add(meaningField);
+		
 		add(inputPanel, BorderLayout.NORTH);
 		
 		responseArea = new JTextArea();
@@ -35,7 +39,11 @@ public class Client extends JFrame{
 		
 		JPanel buttonPanel = new JPanel(new GridLayout(1, 5, 5, 5));
 		
-		buttonPanel.add(createButton("Search", e -> sendRequest("SEARCH|" + wordField.getText())));
+		buttonPanel.add(createButton("Search Word", e -> sendRequest("SEARCH|" + wordField.getText())));
+		buttonPanel.add(createButton("Add Word", e -> sendRequest("ADD|" + wordField.getText() + "|" + meaningField.getText())));
+		buttonPanel.add(createButton("Remove Word", e -> sendRequest("REMOVE|" + wordField.getText())));
+		buttonPanel.add(createButton("Add Meaning", e -> sendRequest("APPEND|" + wordField.getText() + "|" + meaningField.getText())));
+		buttonPanel.add(createButton("Update Meaning", e -> sendRequest("UPDATE|" + wordField.getText() + "|" + exMeaningField.getText() + "|" + newMeaningField.getText())));
 		
 		add(buttonPanel, BorderLayout.SOUTH);
 		

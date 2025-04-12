@@ -1,10 +1,12 @@
-hello:A greeting;A way to say hi
-java:A popular programming language;Used for enterprise applications
-computer:An electronic device for processing data
-university:A place for higher education;A community of scholars
-network:A group of interconnected devices;Can be wired or wireless
+:command line interface
 server:A system that provides services to clients
-client:A device or program that accesses a service provided by a server
+computer:An electronic device for processing data
+java:Used for enterprise applications;A popular programming language
 dictionary:A book or database of word meanings;Used for looking up words
+university:A place for higher education;A community of scholars
+client:A device or program that accesses a service provided by a server
+hello:A greeting;A way to say hi
 socket:An end point for communication between machines
 thread:A unit of execution in a program;Used for concurrency
+terminal:command line interface
+network:A group of interconnected devices;Can be wired or wireless
