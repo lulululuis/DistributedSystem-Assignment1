@@ -6,6 +6,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
+// Luis, Mauboy, 1684115
+
 public class Client extends JFrame{
 	private Socket socket;
 	private PrintWriter writer;
@@ -16,21 +18,29 @@ public class Client extends JFrame{
 	
 	public Client(String serverAddress, int serverPort) {
 		setTitle("Dictionary");
-		setSize(600, 500);
+		setSize(800, 600);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setLayout(new BorderLayout());
 		
 		JPanel inputPanel = new JPanel(new GridLayout(4, 2, 5, 5));
 		inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		
-		inputPanel.add(new JLabel("Word: "));
+		inputPanel.add(new JLabel("Word "));
 		wordField = new JTextField();
 		inputPanel.add(wordField);
 		
-		inputPanel.add(new JLabel("Meaning: "));
+		inputPanel.add(new JLabel("Meaning (For Adding)"));
 		meaningField = new JTextField();
 		inputPanel.add(meaningField);
 		
+		inputPanel.add(new JLabel("Existing Meaning (For Updating)"));
+		exMeaningField = new JTextField();
+		inputPanel.add(exMeaningField);
+		
+		inputPanel.add(new JLabel("New meaning (For Updating)"));
+		newMeaningField = new JTextField();
+		inputPanel.add(newMeaningField);
+
 		add(inputPanel, BorderLayout.NORTH);
 		
 		responseArea = new JTextArea();
@@ -73,7 +83,7 @@ public class Client extends JFrame{
 		try {
 			writer.println(request);
 			String response = reader.readLine();
-			appendResponse("Server: " + response);
+			appendResponse(response);
 		} catch (IOException ex) {
 			showError("Error communicating with server: " + ex.getMessage());
 		}
