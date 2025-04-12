@@ -97,6 +97,8 @@ public class Server {
 					return searchWord(parts);
 				case "ADD":
 					return addWord(parts);
+				case "REMOVE":
+					return removeWord(parts);
 				default:
 					return "Unknown Command.";
 			}
@@ -111,13 +113,23 @@ public class Server {
 		}
 		
 		private String addWord(String[] parts) {
-			if(parts.length < 3 || parts[2].isEmpty()) return "Word and meaning required.";
+			if(parts.length < 3 || parts[1].trim().isEmpty() || parts[2].trim().isEmpty()) return "Word and meaning required.";
 			String word = parts[1].toLowerCase();
 			if(dictionary.containsKey(word)) return "Duplicate: Word already exists.";
 			Set<String> meanings = new HashSet<>(Arrays.asList(parts[2].split(";")));
 			dictionary.put(word, meanings);
 			saveDictionary();
 			return "Success: Word added.";
+		}
+		
+		private String removeWord(String[] parts) {
+			if(parts.length < 2) return "Missing word.";
+			String word = parts[1].toLowerCase();
+			if(dictionary.remove(word) != null) {
+				saveDictionary();
+				return "Word removed.";
+			}
+			return "Word not found.";
 		}
 	}
 }
