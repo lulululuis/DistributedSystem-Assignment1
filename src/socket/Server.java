@@ -3,7 +3,7 @@ package socket;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import org.json.*;
+import org.json.JSONObject;
 
 // Luis, Mauboy, 1684115
 
@@ -45,7 +45,7 @@ public class Server {
 	
 	private static void loadDictionary() {
 		if(!dictionaryFile.exists()) {
-			System.out.println("Dictionary file not found.");
+			System.out.println("Dictionary file not found. Starting with new dictionary file.");
 			return;
 		}
 		
@@ -133,7 +133,7 @@ public class Server {
 			if(word.isEmpty()) return "ERROR: Word required.";
 			Set<String> meanings = dictionary.get(word);
 			if(meanings == null) return "ERROR: Word not found.";
-			return "Meanings: " + String.join(";", meanings);
+			return "Meaning(s): " + String.join(";", meanings);
 		}
 		
 		private String addWord(JSONObject json) {
@@ -175,9 +175,9 @@ public class Server {
 			String word = json.optString("word", "").trim().toLowerCase();
 			String exMeaning = json.optString("exMeaning", "").trim();
 			String newMeaning = json.optString("newMeaning", "").trim();
-			if(word.isEmpty()) return "Word required.";
-			if(exMeaning.isEmpty()) return "Existing meaning required.";
-			if(newMeaning.isEmpty()) return "New meaning required.";
+			if(word.isEmpty()) return "ERROR: Word required.";
+			if(exMeaning.isEmpty()) return "ERROR: Existing meaning required.";
+			if(newMeaning.isEmpty()) return "ERROR: New meaning required.";
 			Set<String> meanings = dictionary.get(word);
 			if(meanings == null) return "ERROR: Word not found.";
 			if(!meanings.contains(exMeaning)) return "ERROR: Existing meaning not found.";

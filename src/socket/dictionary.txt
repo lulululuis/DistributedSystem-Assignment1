@@ -1,5 +1,4 @@
 server:A system that provides services to clients
-luis:tampan;rajin;harum
 computer:An electronic device for processing data
 java:Used for enterprise applications;A popular programming language
 dictionary:A book or database of word meanings;Used for looking up words

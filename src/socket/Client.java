@@ -5,6 +5,7 @@ import java.net.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import org.json.JSONObject;
 
 // Luis, Mauboy, 1684115
 
@@ -47,43 +48,78 @@ public class Client extends JFrame{
 		responseArea.setEditable(false);
 		add(new JScrollPane(responseArea), BorderLayout.CENTER);
 		
-		JPanel buttonPanel = new JPanel(new GridLayout(1, 5, 5, 5));
+		JPanel buttonPanel = new JPanel(new GridLayout(1, 6, 5, 5));
 		
-		buttonPanel.add(createButton("Search Word", e -> sendRequest("SEARCH|" + wordField.getText())));
-		buttonPanel.add(createButton("Add Word", e -> sendRequest("ADD|" + wordField.getText() + "|" + meaningField.getText())));
-		buttonPanel.add(createButton("Remove Word", e -> sendRequest("REMOVE|" + wordField.getText())));
-		buttonPanel.add(createButton("Add Meaning", e -> sendRequest("APPEND|" + wordField.getText() + "|" + meaningField.getText())));
-		buttonPanel.add(createButton("Update Meaning", e -> sendRequest("UPDATE|" + wordField.getText() + "|" + exMeaningField.getText() + "|" + newMeaningField.getText())));
+		buttonPanel.add(createButton("Search Word", e -> sendRequest("SEARCH")));
+		buttonPanel.add(createButton("Add Word", e -> sendRequest("ADD")));
+		buttonPanel.add(createButton("Remove Word", e -> sendRequest("REMOVE")));
+		buttonPanel.add(createButton("Add Meaning", e -> sendRequest("APPEND")));
+		buttonPanel.add(createButton("Update Meaning", e -> sendRequest("UPDATE")));
+		buttonPanel.add(createButton("Shutdown", e -> sendRequest("EXIT")));
 		
 		add(buttonPanel, BorderLayout.SOUTH);
 		
-		try {
-			socket = new Socket(serverAddress, serverPort);
-			writer = new PrintWriter(socket.getOutputStream(), true);
-			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			appendResponse("Connected to server" + serverAddress + ":" + serverPort);
-		} catch (IOException ex) {
-			showError("Unable to connect: " + ex.getMessage());
-		}
-		
+		connectRetryServer(serverAddress, serverPort);
 	}
-	
+		
 	private JButton createButton(String text, ActionListener listener) {
 		JButton button = new JButton(text);
 		button.addActionListener(listener);
 		return button;
 	}
 	
-	private void sendRequest(String request) {
+	private void connectRetryServer(String serverAddress, int serverPort) {
+		int attempts = 0;
+		while (attempts < 3) {
+			try {
+				socket = new Socket(serverAddress, serverPort);
+				writer = new PrintWriter(socket.getOutputStream(), true);
+				reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				appendResponse("Connected to server: " + serverAddress + ":" + serverPort);
+				return;
+			} catch (IOException ex) {
+				attempts++;
+				appendResponse(attempts + " failed connection attempt(s): " + ex.getMessage());
+				try {
+					Thread.sleep(3000);
+				} catch (InterruptedException ignored) {
+					
+				}
+			}
+		}
+		
+		showError("Unable to connect to server after 3 attempts.");
+		System.exit(1);
+	}
+	
+	private void sendRequest(String command) {
 		if(socket == null || socket.isClosed()) {
 			showError("Connection lost.");
 			return;
 		}
 		
 		try {
-			writer.println(request);
+			JSONObject request = new JSONObject();
+			request.put("command", command);
+			
+			String word = wordField.getText().trim();
+			String meaning = meaningField.getText().trim();
+			String exMeaning = exMeaningField.getText().trim();
+			String newMeaning = newMeaningField.getText().trim();
+			
+			if(!word.isEmpty()) request.put("word", word);
+			if(!meaning.isEmpty()) request.put("meaning", meaning);
+			if(!exMeaning.isEmpty()) request.put("exMeaning", exMeaning);
+			if(!newMeaning.isEmpty()) request.put("newMeaning", newMeaning);
+			
+			writer.println(request.toString());
 			String response = reader.readLine();
 			appendResponse(response);
+			
+			if("EXIT".equalsIgnoreCase(command)) {
+				appendResponse("Client shutting down after exit command.");
+				System.exit(0);
+			}
 		} catch (IOException ex) {
 			showError("Error communicating with server: " + ex.getMessage());
 		}
@@ -95,13 +131,14 @@ public class Client extends JFrame{
 	
 	private void showError(String message) {
 		JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
-		appendResponse("Error: " + message);
+		appendResponse("ERROR: " + message);
 	}
 	
 	
     public static void main(String[] args) {
     	if(args.length != 2) {
     		JOptionPane.showMessageDialog(null, "Usage: java -jar Client.jar <server-address> <server-port>", "Usage", JOptionPane.WARNING_MESSAGE);
+    		System.exit(1);
     		return;
     	}
     	
@@ -112,7 +149,6 @@ public class Client extends JFrame{
         	Client client = new Client(serverAddress, serverPort);
         	client.setVisible(true);
         });
-       
     }
 }
 
