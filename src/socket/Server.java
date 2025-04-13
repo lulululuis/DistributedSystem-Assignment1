@@ -3,12 +3,14 @@ package socket;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import org.json.*;
 
 // Luis, Mauboy, 1684115
 
 public class Server {
 	private static Map<String, Set<String>> dictionary = Collections.synchronizedMap(new HashMap<>());
 	private static File dictionaryFile;
+	private static volatile boolean running = true;
 
 	public static void main(String[] args) {
 	 	if(args.length != 2) {
@@ -25,21 +27,25 @@ public class Server {
 		try (ServerSocket serverSocket = new ServerSocket(port)) {
 		    System.out.println("Server is running on port " + port);
 		
-			while (true) {
-				Socket socket = serverSocket.accept();
-				System.out.println("New client connected: " + socket);
-			    	new ClientHandler(socket).start();
-			    }		   
-			} catch (IOException ex) {
-			    System.out.println("Server exception: " + ex.getMessage());
-			        ex.printStackTrace();
+			while (running) {
+				try {
+					Socket clientSocket = serverSocket.accept();
+					System.out.println("New client connected: " + clientSocket);
+			    	new ClientHandler(clientSocket).start();
+			    } catch (SocketException ex) {
+			    	break;
 			    }
+			}
+			System.out.println("Server shutdown.");
+		} catch (IOException ex) {
+			 ex.printStackTrace();
 		}
+	}
 	
 	
 	private static void loadDictionary() {
 		if(!dictionaryFile.exists()) {
-			System.out.println("File not found.");
+			System.out.println("Dictionary file not found.");
 			return;
 		}
 		
@@ -53,7 +59,7 @@ public class Server {
 					dictionary.put(word, meaning);
 				}
 			}
-			System.out.println("Loaded successfully.");
+			System.out.println("SUCCESS: Dictionary loaded.");
 		} catch(IOException ex) {
 			System.out.println("Error loading dictionary: " + ex.getMessage());
 		}
@@ -82,88 +88,101 @@ public class Server {
 							){
 				String request;
 				while ((request = reader.readLine()) != null){
-					String response = handleRequest(request.trim());
+					JSONObject jsonRequest = new JSONObject(request);
+					String response = handleRequest(jsonRequest);
 					writer.println(response);
+					
+					if ("EXIT".equalsIgnoreCase(jsonRequest.optString("command"))) {
+						break;
+					}
 				}
 			} catch (IOException ex){
 			System.out.println("Client disconnected: " + socket);
 	    	}
 	    }
 	    
-		private String handleRequest(String request) {
-			String[] parts = request.split("\\|", -1);
-			String command = parts[0].toUpperCase();
+		private String handleRequest(JSONObject jsonRequest) {
+			String command = jsonRequest.optString("command", "").toUpperCase();
 			
 			switch(command) {
 				case "SEARCH":
-					return searchWord(parts);
+					return searchWord(jsonRequest);
 				case "ADD":
-					return addWord(parts);
+					return addWord(jsonRequest);
 				case "REMOVE":
-					return removeWord(parts);
+					return removeWord(jsonRequest);
 				case "APPEND":
-					return addMeaning(parts);
+					return addMeaning(jsonRequest);
 				case "UPDATE":
-					return updateMeaning(parts);
+					return updateMeaning(jsonRequest);
+				case "EXIT":
+					running = false;
+					try {
+						new Socket("localhost", Integer.parseInt(socket.getLocalPort() + "")).close();
+					} catch (IOException ex) {
+						
+					}
+					return ("Server is shutting down.");
 				default:
-					return "Unknown Command.";
+					return "ERROR: Unknown Command.";
 			}
 		}
 		
-		private String searchWord(String[] parts) {
-			if(parts.length < 2 || parts[1].trim().isEmpty()) return "Word required.";
-			String word = parts[1].toLowerCase();
-			Set<String> meaning = dictionary.get(word);
-			if(meaning == null) return "No word.";
-			return "Meaning: " + String.join(";", meaning);
+		private String searchWord(JSONObject json) {
+			String word = json.optString("word", "").trim().toLowerCase();
+			if(word.isEmpty()) return "ERROR: Word required.";
+			Set<String> meanings = dictionary.get(word);
+			if(meanings == null) return "ERROR: Word not found.";
+			return "Meanings: " + String.join(";", meanings);
 		}
 		
-		private String addWord(String[] parts) {
-			if(parts.length < 3 || parts[1].trim().isEmpty()) return "Word required.";
-			if(parts.length < 3 || parts[2].trim().isEmpty()) return "Meaning required.";
-			String word = parts[1].toLowerCase();
-			if(dictionary.containsKey(word)) return "Duplicate: Word already exists.";
-			Set<String> meaning = new HashSet<>(Arrays.asList(parts[2].split(";")));
-			dictionary.put(word, meaning);
+		private String addWord(JSONObject json) {
+			String word = json.optString("word", "").trim().toLowerCase();
+			String meaning = json.optString("meaning", "").trim();
+			if(word.isEmpty()) return "ERROR: Word required.";
+			if(meaning.isEmpty()) return "ERROR: Meaning required.";
+			if(dictionary.containsKey(word)) return "ERROR: Word already exists.";
+			Set<String> meanings = new HashSet<>(Arrays.asList(meaning.split(";")));			
+			dictionary.put(word, meanings);
 			saveDictionary();
 			return "SUCCESS: Word added.";
 		}
 		
-		private String removeWord(String[] parts) {
-			if(parts.length < 2 || parts[1].trim().isEmpty()) return "Word required.";
-			String word = parts[1].toLowerCase();
+		private String removeWord(JSONObject json) {
+			String word = json.optString("word", "").trim().toLowerCase();
+			if(word.isEmpty()) return "ERROR: Word required.";
 			if(dictionary.remove(word) != null) {
 				saveDictionary();
-				return "Word removed.";
+				return "SUCCESS: Word removed.";
 			}
-			return "Word not found.";
+			return "ERROR: Word not found.";
 		}
 		
-		private String addMeaning(String[] parts) {
-			if(parts.length < 3 || parts[1].trim().isEmpty()) return "Word required.";
-			if(parts.length < 3 || parts[2].trim().isEmpty()) return "Meaning required.";
-			String word = parts[1].toLowerCase();
-			String newMeaning = parts[2];
-			Set<String> meaning = dictionary.get(word);
-			if(meaning == null) return "Word not found.";
-			if(meaning.contains(newMeaning)) return "Meaning already exists.";
-			meaning.add(newMeaning);
+		private String addMeaning(JSONObject json) {
+			String word = json.optString("word", "").trim().toLowerCase();
+			String newMeaning = json.optString("meaning", "").trim();
+			if(word.isEmpty()) return "ERROR: Word required.";
+			if(newMeaning.isEmpty()) return "ERROR: Meaning required.";
+			Set<String> meanings = dictionary.get(word);
+			if(meanings == null) return "ERROR: Word not found.";
+			if(meanings.contains(newMeaning)) return "ERROR: Meaning already exists.";
+			meanings.add(newMeaning);
 			saveDictionary();
 			return "SUCCESS: New meaning added.";
 		}
 		
-		private String updateMeaning(String[] parts) {
-			if(parts.length < 4 || parts[1].trim().isEmpty()) return "Word required.";
-			if(parts.length < 4 || parts[2].trim().isEmpty()) return "Existing meaning required.";
-			if(parts.length < 4 || parts[3].trim().isEmpty()) return "New meaning required.";
-			String word = parts[1].toLowerCase();
-			String exMeaning = parts[2];
-			String newMeaning = parts[3];
-			Set<String> meaning = dictionary.get(word);
-			if(meaning == null) return "Word not found.";
-			if(!meaning.contains(exMeaning)) return "Existing meaning not found.";
-			meaning.remove(exMeaning);
-			meaning.add(newMeaning);
+		private String updateMeaning(JSONObject json) {
+			String word = json.optString("word", "").trim().toLowerCase();
+			String exMeaning = json.optString("exMeaning", "").trim();
+			String newMeaning = json.optString("newMeaning", "").trim();
+			if(word.isEmpty()) return "Word required.";
+			if(exMeaning.isEmpty()) return "Existing meaning required.";
+			if(newMeaning.isEmpty()) return "New meaning required.";
+			Set<String> meanings = dictionary.get(word);
+			if(meanings == null) return "ERROR: Word not found.";
+			if(!meanings.contains(exMeaning)) return "ERROR: Existing meaning not found.";
+			meanings.remove(exMeaning);
+			meanings.add(newMeaning);
 			saveDictionary();
 			return "SUCCESS: Meaning updated.";
 		}
