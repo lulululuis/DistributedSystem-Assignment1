@@ -5,16 +5,16 @@ import java.net.*;
 import java.util.*;
 import org.json.JSONObject;
 
-// Luis, Mauboy, 1684115
+// Luis Mauboy, 1684115
 
-public class Server {
+public class DictionaryServer {
 	private static Map<String, Set<String>> dictionary = Collections.synchronizedMap(new HashMap<>());
 	private static File dictionaryFile;
 	private static volatile boolean running = true;
 
 	public static void main(String[] args) {
 	 	if(args.length != 2) {
-	 		System.out.println("Usage: java -jar Server.jar <port> <dictionary-file>");
+	 		System.out.println("Usage: java -jar DictionaryServer.jar <port> <dictionary-file>");
 	 		return;
 	 	}
 		

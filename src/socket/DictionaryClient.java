@@ -7,9 +7,9 @@ import java.awt.*;
 import java.awt.event.*;
 import org.json.JSONObject;
 
-// Luis, Mauboy, 1684115
+// Luis Mauboy, 1684115
 
-public class Client extends JFrame{
+public class DictionaryClient extends JFrame{
 	private Socket socket;
 	private PrintWriter writer;
 	private BufferedReader reader;
@@ -17,7 +17,7 @@ public class Client extends JFrame{
 	private JTextArea responseArea;
 	
 	
-	public Client(String serverAddress, int serverPort) {
+	public DictionaryClient(String serverAddress, int serverPort) {
 		setTitle("Dictionary");
 		setSize(800, 600);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -137,7 +137,7 @@ public class Client extends JFrame{
 	
     public static void main(String[] args) {
     	if(args.length != 2) {
-    		JOptionPane.showMessageDialog(null, "Usage: java -jar Client.jar <server-address> <server-port>", "Usage", JOptionPane.WARNING_MESSAGE);
+    		JOptionPane.showMessageDialog(null, "Usage: java -jar DictionaryClient.jar <server-address> <server-port>", "Usage", JOptionPane.WARNING_MESSAGE);
     		System.exit(1);
     		return;
     	}
@@ -146,7 +146,7 @@ public class Client extends JFrame{
         int serverPort = Integer.parseInt(args[1]);
         
         SwingUtilities.invokeLater(() -> {
-        	Client client = new Client(serverAddress, serverPort);
+        	DictionaryClient client = new DictionaryClient(serverAddress, serverPort);
         	client.setVisible(true);
         });
     }
